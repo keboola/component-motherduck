@@ -1,12 +1,43 @@
 import logging
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from enum import Enum
+from pydantic import BaseModel, Field, ValidationError, computed_field
 from keboola.component.exceptions import UserException
+from typing import Optional
+
+
+class LoadType(str, Enum):
+    full_load = "full_load"
+    incremental_load = "incremental_load"
+
+
+class ColumnConfig(BaseModel):
+    source_name: str
+    destination_name: str
+    dtype: str
+    pk: bool
+    nullable: bool
+    default_value: Optional[str] = None
+
+
+class Destination(BaseModel):
+    table: str
+    columns: list[ColumnConfig]
+    load_type: LoadType = Field(default=LoadType.incremental_load)
+    preserve_insertion_order: bool = True
+
+    @computed_field
+    def incremental(self) -> bool:
+        return self.load_type in (LoadType.incremental_load)
 
 
 class Configuration(BaseModel):
-    print_hello: bool
-    api_token: str = Field(alias="#api_token")
+    token: str = Field(alias="#token", default=None)
+    database: str = None
+    db_schema: str = None
+    destination: Destination
     debug: bool = False
+    threads: int = 1
+    max_memory: int = 256
 
     def __init__(self, **data):
         try:
@@ -17,9 +48,3 @@ class Configuration(BaseModel):
 
         if self.debug:
             logging.debug("Component will run in Debug mode")
-
-    @field_validator('api_token')
-    def token_must_be_uppercase(cls, v):
-        if not v.isupper():
-            raise UserException('API token must be uppercase')
-        return v
