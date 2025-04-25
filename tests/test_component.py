@@ -10,7 +10,7 @@ import unittest
 import mock
 from freezegun import freeze_time
 
-from component import Component
+from src.component import Component
 
 
 class TestComponent(unittest.TestCase):
