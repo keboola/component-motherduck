@@ -1,8 +1,9 @@
 import logging
 from enum import Enum
-from pydantic import BaseModel, Field, ValidationError, computed_field
-from keboola.component.exceptions import UserException
 from typing import Optional
+
+from keboola.component.exceptions import UserException
+from pydantic import BaseModel, Field, ValidationError, computed_field
 
 
 class LoadType(str, Enum):

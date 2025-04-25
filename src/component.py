@@ -5,6 +5,7 @@ Template Component main class.
 
 import logging
 import os
+from typing import Literal
 
 import duckdb
 from duckdb.duckdb import DuckDBPyConnection, DuckDBPyRelation
@@ -15,7 +16,7 @@ from keboola.component.dao import (
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
 
-from configuration import Configuration, ColumnConfig
+from configuration import ColumnConfig, Configuration
 
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
 
@@ -35,33 +36,81 @@ class Component(ComponentBase):
 
         kbc_input_table_relation = self.create_temp_table(in_table_definition)
 
-        if not self.params.destination.incremental:
-            query = self.build_table_creation_query(
+        if self.params.destination.incremental:
+            self.create_db_table(
+                database=self.params.database,
+                db_schema=self.params.db_schema,
                 table_name=self.params.destination.table,
                 columns_config=self.params.destination.columns,
+                mode="if_not_exists",
             )
-            self._connection.execute(query)
 
-        # copy into created table form temp input table
+            self.check_pks_consistency()
+
+            if [col.destination_name for col in self.params.destination.columns if col.pk]:  # fmt: off
+                # if primary key is defined, use UPSERT
+                strategy = "INSERT OR REPLACE"
+            else:
+                strategy = "INSERT"
+
+        else:
+            self.create_db_table(
+                database=self.params.database,
+                db_schema=self.params.db_schema,
+                table_name=self.params.destination.table,
+                columns_config=self.params.destination.columns,
+                mode="replace",
+            )
+
+            strategy = "INSERT"
+
         self._connection.execute(f"""
-        INSERT INTO '{self.params.destination.table}'
-        SELECT * FROM {kbc_input_table_relation}
+        {strategy} INTO {self.params.database}.{self.params.db_schema}.{self.params.destination.table}
+        SELECT * FROM kbc_input_table_relation
         """)
 
         self._connection.close()
 
-    def build_table_creation_query(
-        self, table_name: str, columns_config: list[ColumnConfig]
-    ) -> str:
+    def check_pks_consistency(self):
         """
-        Creates a SQL query to build a table based on column definitions.
+        Check if the primary key columns defined in the configuration match the primary key columns in the destination table.
+        """
+        pk_selected = set(
+            [col.destination_name for col in self.params.destination.columns if col.pk]
+        )
+        pk_md_result = self._connection.execute(
+            f"""SELECT column_name
+             FROM (SHOW {self.params.database}.{self.params.db_schema}.{self.params.destination.table})
+             WHERE key IS NOT NULL"""
+        ).fetchall()
+        pk_md = set([val[0] for val in pk_md_result])
+        if pk_selected != pk_md:
+            raise UserException(
+                f"Defined primary key columns do not match destination table."
+                f"Defined: {pk_selected}, "
+                f"Mother duck table columns: {pk_md}"
+            )
+
+    def create_db_table(
+        self,
+        database: str,
+        db_schema: str,
+        table_name: str,
+        columns_config: list[ColumnConfig],
+        mode: Literal["if_not_exists", "replace"],
+    ) -> None:
+        """
+        Creates a db table based on column definitions.
 
         Args:
+            database: The database name
+            db_schema: The schema name
             table_name: The name of the table to create
             columns_config: List of ColumnConfig objects defining the columns
+            mode: The mode for table creation, either "if_not_exists" or "replace"
 
         Returns:
-            SQL query string that creates the table with specified columns
+            None
         """
         column_specs = []
         primary_key_columns = []
@@ -86,20 +135,28 @@ class Component(ComponentBase):
             if column.pk:
                 primary_key_columns.append(column.destination_name)
 
-        # Start building the complete query
-        query = f"CREATE OR REPLACE TABLE {table_name} (\n"
+        if mode == "replace":
+            query = f"CREATE OR REPLACE TABLE {database}.{db_schema}.{table_name} ( "
+        elif mode == "if_not_exists":
+            query = f"CREATE TABLE IF NOT EXISTS {database}.{db_schema}.{table_name} ( "
+        else:
+            raise UserException(
+                f"Invalid mode: {mode}. Use 'if_not_exists' or 'replace'."
+            )
 
         # Add all column definitions
-        query += ",\n".join(column_specs)
+        query += ", ".join(column_specs)
 
         # Add primary key constraint if any columns are marked as primary keys
         if primary_key_columns:
-            query += f",\n    PRIMARY KEY ({', '.join(primary_key_columns)})"
+            query += f", PRIMARY KEY ({', '.join(primary_key_columns)})"
 
         # Finish the query
-        query += "\n);"
+        query += ");"
 
-        return query
+        self._connection.execute(query)
+
+        return
 
     def get_in_table(self):
         in_tables = self.get_input_tables_definitions()
@@ -114,12 +171,11 @@ class Component(ComponentBase):
             extension_directory=os.path.join(DUCK_DB_DIR, "extensions"),
             threads=self.params.threads,
             max_memory=f"{self.params.max_memory}MB",
-            # motherduck_token=self.params.token,
+            motherduck_token=self.params.token,
         )
 
         try:
-            # conn = duckdb.connect(database="md:", config=config)
-            conn = duckdb.connect(config=config)
+            conn = duckdb.connect(database="md:", config=config)
 
         except Exception:
             raise UserException(
