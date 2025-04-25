@@ -1,1 +1,184 @@
-{}
+{
+  "type": "object",
+  "title": "Table configuration",
+  "required": [
+    "columns"
+  ],
+  "properties": {
+    "destination": {
+      "type": "object",
+      "title": "Destination",
+      "required": [
+        "columns"
+      ],
+      "properties": {
+        "table": {
+          "type": "string",
+          "enum": [],
+          "title": "Table",
+          "format": "select",
+          "options": {
+            "async": {
+              "label": "Load tables",
+              "action": "list_tables",
+              "autoload": []
+            }
+          },
+          "propertyOrder": 1
+        },
+        "load_type": {
+          "enum": [
+            "incremental_load",
+            "full_load"
+          ],
+          "type": "string",
+          "title": "Load Type",
+          "default": "incremental_load",
+          "options": {
+            "enum_titles": [
+              "Incremental Load",
+              "Full Load"
+            ],
+            "dependencies": {
+              "parquet_output": false
+            }
+          },
+          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
+          "propertyOrder": 2
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "title": "Column",
+            "required": [
+              "source_name",
+              "destination_name"
+            ],
+            "properties": {
+              "source_name": {
+                "type": "string",
+                "title": "Source Column",
+                "watch": {
+                  "columns": "_metadata_.table.columns"
+                },
+                "enumSource": "columns",
+                "propertyOrder": 1
+              },
+              "destination_name": {
+                "type": "string",
+                "title": "Destination Column",
+                "propertyOrder": 2
+              },
+              "dtype": {
+                "type": "string",
+                "title": "Data Type",
+                "enum": [
+                  "BIGINT",
+                  "BIT",
+                  "BLOB",
+                  "BOOLEAN",
+                  "DATE",
+                  "DECIMAL(18,3)",
+                  "DOUBLE",
+                  "FLOAT",
+                  "HUGEINT",
+                  "INTEGER",
+                  "INTERVAL",
+                  "JSON",
+                  "SMALLINT",
+                  "TIME",
+                  "TIMESTAMP WITH TIME ZONE",
+                  "TIMESTAMP",
+                  "TINYINT",
+                  "UBIGINT",
+                  "UHUGEINT",
+                  "UINTEGER",
+                  "USMALLINT",
+                  "UTINYINT",
+                  "UUID",
+                  "VARCHAR"
+                ],
+                "default": "string",
+                "propertyOrder": 3
+              },
+              "pk": {
+                "type": "boolean",
+                "title": "Primary Key",
+                "format": "checkbox",
+                "propertyOrder": 4
+              },
+              "nullable": {
+                "type": "boolean",
+                "title": "Nullable",
+                "format": "checkbox",
+                "propertyOrder": 5
+              },
+              "default_value": {
+                "type": "string",
+                "title": "Defaul Value",
+                "propertyOrder": 6
+              }
+            }
+          },
+          "title": "Columns",
+          "format": "table",
+          "propertyOrder": 3
+        },
+        "_metadata_": {
+          "type": "object",
+          "options": {
+            "hidden": true
+          },
+          "properties": {
+            "table": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "columns": {
+                  "type": "array"
+                },
+                "primaryKey": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "preserve_insertion_order": {
+          "type": "boolean",
+          "title": "Preserve insertion order",
+          "format": "checkbox",
+          "default": true,
+          "description": "If enabled, the extractor will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
+          "propertyOrder": 4
+        }
+      },
+      "propertyOrder": 1
+    },
+    "load_columns": {
+      "type": "button",
+      "format": "sync-action",
+      "propertyOrder": 2,
+      "options": {
+        "async": {
+          "label": "Load columns",
+          "action": "return_columns_data"
+        }
+      }
+    },
+    "debug": {
+      "type": "boolean",
+      "title": "Debug mode",
+      "format": "checkbox",
+      "default": false,
+      "description": "If enabled, the component will produce detailed logs",
+      "propertyOrder": 3
+    }
+  }
+}

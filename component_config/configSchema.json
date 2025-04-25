@@ -1,19 +1,49 @@
 {
   "type": "object",
-  "title": "extractor configuration",
+  "title": "Connection",
   "required": [
-    "print_hello"
+    "#token",
+    "database",
+    "db_schema"
   ],
   "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello",
-      "propertyOrder": 1
+    "#token": {
+      "type": "string",
+      "title": "Access Token",
+      "description": "The MotherDuck access token. More information on how to get the token can be found in the <a href=\"https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token\">documentation</a>.",
+      "format": "password",
+      "propertyOrder": 1,
+      "options": {
+        "dependencies": {
+          "provider": "abs"
+        }
+      }
     },
-    "debug": {
-      "type": "boolean",
-      "title": "Debug",
+    "database": {
+      "type": "string",
+      "enum": [],
+      "title": "Database",
+      "format": "select",
+      "options": {
+        "async": {
+          "label": "Load databases",
+          "action": "list_databases"
+        }
+      },
       "propertyOrder": 2
+    },
+    "db_schema": {
+      "type": "string",
+      "enum": [],
+      "title": "Database",
+      "format": "select",
+      "options": {
+        "async": {
+          "label": "Load databases",
+          "action": "list_databases"
+        }
+      },
+      "propertyOrder": 3
     }
   }
 }
