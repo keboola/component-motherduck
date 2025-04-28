@@ -156,6 +156,9 @@ class Component(ComponentBase):
         # Finish the query
         query += ");"
 
+        if self.params.debug:
+            logging.debug(f"Executing query: {query}")
+
         self._connection.execute(query)
 
         return

@@ -46,6 +46,3 @@ class Configuration(BaseModel):
         except ValidationError as e:
             error_messages = [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
             raise UserException(f"Validation Error: {', '.join(error_messages)}")
-
-        if self.debug:
-            logging.debug("Component will run in Debug mode")
