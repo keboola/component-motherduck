@@ -65,9 +65,13 @@ class Component(ComponentBase):
 
             strategy = "INSERT"
 
+        columns = ", ".join(
+            [f"{col.source_name}" for col in self.params.destination.columns]
+        )
+
         self._connection.execute(f"""
         {strategy} INTO {self.params.database}.{self.params.db_schema}.{self.params.destination.table}
-        SELECT * FROM kbc_input_table_relation
+        SELECT {columns} FROM kbc_input_table_relation
         """)
 
         self._connection.close()
@@ -94,12 +98,12 @@ class Component(ComponentBase):
             )
 
     def create_db_table(
-        self,
-        database: str,
-        db_schema: str,
-        table_name: str,
-        columns_config: list[ColumnConfig],
-        mode: Literal["if_not_exists", "replace"],
+            self,
+            database: str,
+            db_schema: str,
+            table_name: str,
+            columns_config: list[ColumnConfig],
+            mode: Literal["if_not_exists", "replace"],
     ) -> None:
         """
         Creates a db table based on column definitions.
@@ -123,7 +127,7 @@ class Component(ComponentBase):
             if not column.nullable:
                 column_definition += " NOT NULL"
 
-            if column.default_value is not None:
+            if column.default_value is not None and column.default_value != "":
                 if column.dtype == "STRING":
                     # String values need quotes
                     column_definition += f" DEFAULT '{column.default_value}'"
@@ -238,7 +242,7 @@ class Component(ComponentBase):
     @sync_action("return_columns_data")
     def return_columns_data(self):
         if self.params.destination.columns:
-            columns = [col.model_dump_json() for col in self.params.destination.columns]
+            columns = [col.model_dump() for col in self.params.destination.columns]
 
         else:
             in_table = self.get_in_table()
@@ -254,7 +258,7 @@ class Component(ComponentBase):
                         pk=definition.primary_key or False,
                         nullable=definition.nullable,
                         default_value=definition.data_types.get("base").default,
-                    ).model_dump_json()
+                    ).model_dump()
                 )
 
         return {
