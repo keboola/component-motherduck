@@ -34,7 +34,8 @@ class Component(ComponentBase):
 
         in_table_definition = self.get_in_table()
 
-        kbc_input_table_relation = self.create_temp_table(in_table_definition)
+        # table name is referenced in the query
+        kbc_input_table_relation = self.create_temp_table(in_table_definition) # noqa: F841
 
         if self.params.destination.incremental:
             self.create_db_table(
@@ -73,7 +74,8 @@ class Component(ComponentBase):
 
     def check_pks_consistency(self):
         """
-        Check if the primary key columns defined in the configuration match the primary key columns in the destination table.
+        Check if the primary key columns defined in the configuration
+        match the primary key columns in the destination table.
         """
         pk_selected = set(
             [col.destination_name for col in self.params.destination.columns if col.pk]
@@ -179,7 +181,7 @@ class Component(ComponentBase):
 
         except Exception:
             raise UserException(
-                f"Test connection failed, please check your configuration."
+                "Test connection failed, please check your configuration."
             )
 
         if not self.params.destination.preserve_insertion_order:
