@@ -27,7 +27,8 @@
       "options": {
         "async": {
           "label": "Load databases",
-          "action": "list_databases"
+          "action": "list_databases",
+          "autoload": []
         }
       },
       "propertyOrder": 2
@@ -35,12 +36,12 @@
     "db_schema": {
       "type": "string",
       "enum": [],
-      "title": "Database",
+      "title": "Schema",
       "format": "select",
       "options": {
         "async": {
-          "label": "Load databases",
-          "action": "list_databases"
+          "label": "Load schemas",
+          "action": "list_schemas"
         }
       },
       "propertyOrder": 3

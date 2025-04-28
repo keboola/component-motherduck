@@ -235,7 +235,7 @@ class Component(ComponentBase):
     @sync_action("return_columns_data")
     def return_columns_data(self):
         if self.params.destination.columns:
-            columns = self.params.destination.columns
+            columns = [col.model_dump_json() for col in self.params.destination.columns]
 
         else:
             in_table = self.get_in_table()
@@ -251,12 +251,12 @@ class Component(ComponentBase):
                         pk=definition.primary_key or False,
                         nullable=definition.nullable,
                         default_value=definition.data_types.get("base").default,
-                    ).model_dump()
+                    ).model_dump_json()
                 )
 
         return {
             "type": "data",
-            "data": {"columns": columns},
+            "data": {"destination": {"columns": columns}},
         }
 
 
