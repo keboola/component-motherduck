@@ -35,7 +35,7 @@ class Component(ComponentBase):
         in_table_definition = self.get_in_table()
 
         # table name is referenced in the query
-        kbc_input_table_relation = self.create_temp_table(in_table_definition) # noqa: F841
+        kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
 
         if self.params.destination.incremental:
             self.create_db_table(
