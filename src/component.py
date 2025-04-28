@@ -37,44 +37,47 @@ class Component(ComponentBase):
         # table name is referenced in the query
         kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
 
-        if self.params.destination.incremental:
-            self.create_db_table(
-                database=self.params.database,
-                db_schema=self.params.db_schema,
-                table_name=self.params.destination.table,
-                columns_config=self.params.destination.columns,
-                mode="if_not_exists",
-            )
+        try:
+            if self.params.destination.incremental:
+                self.create_db_table(
+                    database=self.params.database,
+                    db_schema=self.params.db_schema,
+                    table_name=self.params.destination.table,
+                    columns_config=self.params.destination.columns,
+                    mode="if_not_exists",
+                )
 
-            self.check_pks_consistency()
+                self.check_pks_consistency()
 
-            if [col.destination_name for col in self.params.destination.columns if col.pk]:  # fmt: off
-                # if primary key is defined, use UPSERT
-                strategy = "INSERT OR REPLACE"
+                if [col.destination_name for col in self.params.destination.columns if col.pk]:  # fmt: off
+                    # if primary key is defined, use UPSERT
+                    strategy = "INSERT OR REPLACE"
+                else:
+                    strategy = "INSERT"
+
             else:
+                self.create_db_table(
+                    database=self.params.database,
+                    db_schema=self.params.db_schema,
+                    table_name=self.params.destination.table,
+                    columns_config=self.params.destination.columns,
+                    mode="replace",
+                )
+
                 strategy = "INSERT"
 
-        else:
-            self.create_db_table(
-                database=self.params.database,
-                db_schema=self.params.db_schema,
-                table_name=self.params.destination.table,
-                columns_config=self.params.destination.columns,
-                mode="replace",
+            columns = ", ".join(
+                [f"{col.source_name}" for col in self.params.destination.columns]
             )
 
-            strategy = "INSERT"
-
-        columns = ", ".join(
-            [f"{col.source_name}" for col in self.params.destination.columns]
-        )
-
-        self._connection.execute(f"""
-        {strategy} INTO {self.params.database}.{self.params.db_schema}.{self.params.destination.table}
-        SELECT {columns} FROM kbc_input_table_relation
-        """)
-
-        self._connection.close()
+            self._connection.execute(f"""
+            {strategy} INTO {self.params.database}.{self.params.db_schema}.{self.params.destination.table}
+            SELECT {columns} FROM kbc_input_table_relation
+            """)
+        except duckdb.duckdb.ConstraintException as e:
+            raise UserException(f"Error during data load: {e}") from e
+        finally:
+            self._connection.close()
 
     def check_pks_consistency(self):
         """
@@ -98,12 +101,12 @@ class Component(ComponentBase):
             )
 
     def create_db_table(
-            self,
-            database: str,
-            db_schema: str,
-            table_name: str,
-            columns_config: list[ColumnConfig],
-            mode: Literal["if_not_exists", "replace"],
+        self,
+        database: str,
+        db_schema: str,
+        table_name: str,
+        columns_config: list[ColumnConfig],
+        mode: Literal["if_not_exists", "replace"],
     ) -> None:
         """
         Creates a db table based on column definitions.
