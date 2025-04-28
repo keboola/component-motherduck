@@ -173,7 +173,7 @@ class Component(ComponentBase):
     def get_in_table(self):
         in_tables = self.get_input_tables_definitions()
         if len(in_tables) != 1:
-            raise UserException("Exactly one input table is expected.")
+            raise UserException(f"Exactly one input table is expected. Found: {[t.destination for t in in_tables]}")
         return in_tables[0]
 
     def init_connection(self) -> DuckDBPyConnection:
