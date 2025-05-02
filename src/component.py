@@ -255,9 +255,33 @@ class Component(ComponentBase):
 
     @sync_action("return_columns_data")
     def return_columns_data(self):
-        if self.params.destination.columns:
-            columns = [col.model_dump() for col in self.params.destination.columns]
+        def map_to_duckdb_type(keboola_type: str) -> str:
+            """
+            Maps Keboola data types to DuckDB data types.
 
+            Args:
+                keboola_type: The Keboola data type
+
+            Returns:
+                str: Corresponding DuckDB data type
+            """
+            type_mapping = {
+                "STRING": "VARCHAR",
+                "INTEGER": "INTEGER",
+                "NUMERIC": "DECIMAL",
+                "FLOAT": "FLOAT",
+                "BOOLEAN": "BOOLEAN",
+                "DATE": "DATE",
+                "TIMESTAMP": "TIMESTAMP",
+            }
+            return type_mapping.get(keboola_type, keboola_type)
+
+        if self.params.destination.columns:
+            columns = []
+            for col in self.params.destination.columns:
+                col_data = col.model_dump()
+                col_data["dtype"] = map_to_duckdb_type(col_data["dtype"])
+                columns.append(col_data)
         else:
             if len(self.configuration.tables_input_mapping) != 1:
                 raise UserException(
@@ -279,12 +303,13 @@ class Component(ComponentBase):
                 for column in table_detail["definition"]["columns"]:
                     col_name = column["name"]
                     col_def = column["definition"]
+                    keboola_type = col_def.get("type", "VARCHAR")
 
                     columns.append(
                         ColumnConfig(
                             source_name=col_name,
                             destination_name=col_name,
-                            dtype=col_def.get("type", "STRING"),
+                            dtype=map_to_duckdb_type(keboola_type),
                             pk=col_name in primary_keys,
                             nullable=col_def.get("nullable", True),
                             default_value=None,
@@ -298,7 +323,7 @@ class Component(ComponentBase):
                         ColumnConfig(
                             source_name=col_name,
                             destination_name=col_name,
-                            dtype="STRING",
+                            dtype="VARCHAR",
                             pk=col_name in primary_keys,
                             nullable=col_name not in primary_keys,
                             default_value=None,

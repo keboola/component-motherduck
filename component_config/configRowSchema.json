@@ -99,7 +99,7 @@
                   "UUID",
                   "VARCHAR"
                 ],
-                "default": "string",
+                "default": "VARCHAR",
                 "propertyOrder": 3
               },
               "pk": {
