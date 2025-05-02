@@ -9,13 +9,13 @@ from typing import Literal
 
 import duckdb
 from duckdb.duckdb import DuckDBPyConnection, DuckDBPyRelation
+from kbcstorage.client import Client as StorageClient
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.dao import (
     TableDefinition,
 )
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
-from kbcstorage.client import Client as StorageClient
 
 from configuration import ColumnConfig, Configuration
 
@@ -307,7 +307,15 @@ class Component(ComponentBase):
 
         return {
             "type": "data",
-            "data": {"destination": {"columns": columns}},
+            "data": {
+                "destination": {
+                    "table": self.params.destination.table,
+                    "load_type": self.params.destination.load_type,
+                    "columns": columns,
+                    "preserve_insertion_order": self.params.destination.preserve_insertion_order,
+                },
+                "debug": self.params.debug,
+            },
         }
 
 

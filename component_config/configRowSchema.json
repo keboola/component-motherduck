@@ -2,7 +2,7 @@
   "type": "object",
   "title": "Table configuration",
   "required": [
-    "columns"
+    "destination"
   ],
   "properties": {
     "destination": {
@@ -150,27 +150,27 @@
             }
           }
         },
+        "load_columns": {
+          "type": "button",
+          "format": "sync-action",
+          "propertyOrder": 4,
+          "options": {
+            "async": {
+              "label": "Load columns",
+              "action": "return_columns_data"
+            }
+          }
+        },
         "preserve_insertion_order": {
           "type": "boolean",
           "title": "Preserve insertion order",
           "format": "checkbox",
           "default": true,
           "description": "If enabled, the extractor will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
-          "propertyOrder": 4
+          "propertyOrder": 5
         }
       },
       "propertyOrder": 1
-    },
-    "load_columns": {
-      "type": "button",
-      "format": "sync-action",
-      "propertyOrder": 2,
-      "options": {
-        "async": {
-          "label": "Load columns",
-          "action": "return_columns_data"
-        }
-      }
     },
     "debug": {
       "type": "boolean",
