@@ -300,7 +300,7 @@ class Component(ComponentBase):
                             destination_name=col_name,
                             dtype="STRING",
                             pk=col_name in primary_keys,
-                            nullable=not col_name in primary_keys,
+                            nullable=col_name not in primary_keys,
                             default_value=None,
                         ).model_dump()
                     )
