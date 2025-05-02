@@ -21,7 +21,7 @@ class ColumnConfig(BaseModel):
 
 class Destination(BaseModel):
     table: str
-    columns: list[ColumnConfig]
+    columns: list[ColumnConfig] = []
     load_type: LoadType = Field(default=LoadType.incremental_load)
     preserve_insertion_order: bool = True
 
@@ -34,7 +34,7 @@ class Configuration(BaseModel):
     token: str = Field(alias="#token", default=None)
     database: str = None
     db_schema: str = None
-    destination: Destination
+    destination: Destination = None
     debug: bool = False
     threads: int = 1
     max_memory: int = 256
