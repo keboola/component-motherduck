@@ -194,7 +194,7 @@ class Component(ComponentBase):
                 "Test connection failed, please check your configuration."
             )
 
-        if not self.params.destination.preserve_insertion_order:
+        if self.params.destination and not self.params.destination.preserve_insertion_order:
             conn.execute("SET preserve_insertion_order = false;").fetchall()
 
         return conn

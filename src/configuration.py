@@ -34,7 +34,7 @@ class Configuration(BaseModel):
     token: str = Field(alias="#token", default=None)
     database: str = None
     db_schema: str = None
-    destination: Destination
+    destination: Destination = None
     debug: bool = False
     threads: int = 1
     max_memory: int = 256
