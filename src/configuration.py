@@ -21,7 +21,7 @@ class ColumnConfig(BaseModel):
 
 class Destination(BaseModel):
     table: str
-    columns: list[ColumnConfig]
+    columns: list[ColumnConfig] = []
     load_type: LoadType = Field(default=LoadType.incremental_load)
     preserve_insertion_order: bool = True
 

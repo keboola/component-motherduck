@@ -15,6 +15,7 @@ from keboola.component.dao import (
 )
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
+from kbcstorage.client import Client as StorageClient
 
 from configuration import ColumnConfig, Configuration
 
@@ -173,7 +174,9 @@ class Component(ComponentBase):
     def get_in_table(self):
         in_tables = self.get_input_tables_definitions()
         if len(in_tables) != 1:
-            raise UserException(f"Exactly one input table is expected. Found: {[t.destination for t in in_tables]}")
+            raise UserException(
+                f"Exactly one input table is expected. Found: {[t.destination for t in in_tables]}"
+            )
         return in_tables[0]
 
     def init_connection(self) -> DuckDBPyConnection:
@@ -194,7 +197,10 @@ class Component(ComponentBase):
                 "Test connection failed, please check your configuration."
             )
 
-        if self.params.destination and not self.params.destination.preserve_insertion_order:
+        if (
+            self.params.destination
+            and not self.params.destination.preserve_insertion_order
+        ):
             conn.execute("SET preserve_insertion_order = false;").fetchall()
 
         return conn
@@ -211,6 +217,11 @@ class Component(ComponentBase):
             },
         )
         return table
+
+    def _init_storage_client(self) -> StorageClient:
+        storage_token = self.environment_variables.token
+        storage_client = StorageClient(self.environment_variables.url, storage_token)
+        return storage_client
 
     @sync_action("testConnection")
     def test_connection(self):
@@ -248,21 +259,51 @@ class Component(ComponentBase):
             columns = [col.model_dump() for col in self.params.destination.columns]
 
         else:
-            in_table = self.get_in_table()
+            if len(self.configuration.tables_input_mapping) != 1:
+                raise UserException(
+                    "Exactly one input table is expected. Found: "
+                    f"{[t.destination for t in self.configuration.tables_input_mapping]}"
+                )
+
+            table_id = self.configuration.tables_input_mapping[0].source
+            storage_client = self._init_storage_client()
+            table_detail = storage_client.tables.detail(table_id)
 
             columns = []
 
-            for name, definition in in_table.schema.items():
-                columns.append(
-                    ColumnConfig(
-                        source_name=name,
-                        destination_name=name,
-                        dtype=definition.data_types.get("base").dtype,
-                        pk=definition.primary_key or False,
-                        nullable=definition.nullable,
-                        default_value=definition.data_types.get("base").default,
-                    ).model_dump()
+            if table_detail.get("isTyped", False) and table_detail.get("definition"):
+                primary_keys = set(
+                    table_detail["definition"].get("primaryKeysNames", [])
                 )
+
+                for column in table_detail["definition"]["columns"]:
+                    col_name = column["name"]
+                    col_def = column["definition"]
+
+                    columns.append(
+                        ColumnConfig(
+                            source_name=col_name,
+                            destination_name=col_name,
+                            dtype=col_def.get("type", "STRING"),
+                            pk=col_name in primary_keys,
+                            nullable=col_def.get("nullable", True),
+                            default_value=None,
+                        ).model_dump()
+                    )
+            else:  # Non-typed table
+                primary_keys = set(table_detail.get("primaryKey", []))
+
+                for col_name in table_detail.get("columns", []):
+                    columns.append(
+                        ColumnConfig(
+                            source_name=col_name,
+                            destination_name=col_name,
+                            dtype="STRING",
+                            pk=col_name in primary_keys,
+                            nullable=not col_name in primary_keys,
+                            default_value=None,
+                        ).model_dump()
+                    )
 
         return {
             "type": "data",
