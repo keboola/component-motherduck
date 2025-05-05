@@ -1,33 +1,21 @@
-"""
-Template Component main class.
-
-"""
-
 import logging
-import os
-from typing import Literal
 import time
 
-import duckdb
-from duckdb.duckdb import DuckDBPyConnection, DuckDBPyRelation
+from duckdb.duckdb import ConstraintException
 from kbcstorage.client import Client as StorageClient
 from keboola.component.base import ComponentBase, sync_action
-from keboola.component.dao import (
-    TableDefinition,
-)
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
 
+from client.duck import DuckConnection
 from configuration import ColumnConfig, Configuration
-
-DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
 
 
 class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         self.params = Configuration(**self.configuration.parameters)
-        self._connection = self.init_connection()
+        self.db = DuckConnection(self.params)
 
     def run(self):
         """
@@ -39,11 +27,11 @@ class Component(ComponentBase):
         in_table_definition = self.get_in_table()
 
         # table name is referenced in the query
-        kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
+        kbc_input_table_relation = self.db.create_temp_table(in_table_definition)  # noqa: F841
 
         try:
             if self.params.destination.incremental:
-                self.create_db_table(
+                self.db.create_db_table(
                     database=self.params.database,
                     db_schema=self.params.db_schema,
                     table_name=self.params.destination.table,
@@ -60,7 +48,7 @@ class Component(ComponentBase):
                     strategy = "INSERT"
 
             else:
-                self.create_db_table(
+                self.db.create_db_table(
                     database=self.params.database,
                     db_schema=self.params.db_schema,
                     table_name=self.params.destination.table,
@@ -74,14 +62,14 @@ class Component(ComponentBase):
                 [f"{col.source_name}" for col in self.params.destination.columns]
             )
 
-            self._connection.execute(f"""
+            self.db.connection.execute(f"""
             {strategy} INTO {self.params.database}.{self.params.db_schema}.{self.params.destination.table}
             SELECT {columns} FROM kbc_input_table_relation
             """)
-        except duckdb.duckdb.ConstraintException as e:
+        except ConstraintException as e:
             raise UserException(f"Error during data load: {e}") from e
         finally:
-            self._connection.close()
+            self.db.connection.close()
             logging.debug(f"Execution time: {time.time() - start_time:.2f} seconds")
 
     def check_pks_consistency(self):
@@ -92,7 +80,7 @@ class Component(ComponentBase):
         pk_selected = set(
             [col.destination_name for col in self.params.destination.columns if col.pk]
         )
-        pk_md_result = self._connection.execute(
+        pk_md_result = self.db.connection.execute(
             f"""SELECT column_name
              FROM (SHOW {self.params.database}.{self.params.db_schema}.{self.params.destination.table})
              WHERE key IS NOT NULL"""
@@ -105,76 +93,6 @@ class Component(ComponentBase):
                 f"Mother duck table columns: {pk_md}"
             )
 
-    def create_db_table(
-        self,
-        database: str,
-        db_schema: str,
-        table_name: str,
-        columns_config: list[ColumnConfig],
-        mode: Literal["if_not_exists", "replace"],
-    ) -> None:
-        """
-        Creates a db table based on column definitions.
-
-        Args:
-            database: The database name
-            db_schema: The schema name
-            table_name: The name of the table to create
-            columns_config: List of ColumnConfig objects defining the columns
-            mode: The mode for table creation, either "if_not_exists" or "replace"
-
-        Returns:
-            None
-        """
-        column_specs = []
-        primary_key_columns = []
-
-        for column in columns_config:
-            column_definition = f"{column.destination_name} {column.dtype}"
-
-            if not column.nullable:
-                column_definition += " NOT NULL"
-
-            if column.default_value is not None and column.default_value != "":
-                if column.dtype == "STRING":
-                    # String values need quotes
-                    column_definition += f" DEFAULT '{column.default_value}'"
-                else:
-                    # Numeric and boolean values don't need quotes
-                    column_definition += f" DEFAULT {column.default_value}"
-
-            column_specs.append(column_definition)
-
-            # Keep track of primary key columns
-            if column.pk:
-                primary_key_columns.append(column.destination_name)
-
-        if mode == "replace":
-            query = f"CREATE OR REPLACE TABLE {database}.{db_schema}.{table_name} ( "
-        elif mode == "if_not_exists":
-            query = f"CREATE TABLE IF NOT EXISTS {database}.{db_schema}.{table_name} ( "
-        else:
-            raise UserException(
-                f"Invalid mode: {mode}. Use 'if_not_exists' or 'replace'."
-            )
-
-        # Add all column definitions
-        query += ", ".join(column_specs)
-
-        # Add primary key constraint if any columns are marked as primary keys
-        if primary_key_columns:
-            query += f", PRIMARY KEY ({', '.join(primary_key_columns)})"
-
-        # Finish the query
-        query += ");"
-
-        if self.params.debug:
-            logging.debug(f"Executing query: {query}")
-
-        self._connection.execute(query)
-
-        return
-
     def get_in_table(self):
         in_tables = self.get_input_tables_definitions()
         if len(in_tables) != 1:
@@ -182,39 +100,6 @@ class Component(ComponentBase):
                 f"Exactly one input table is expected. Found: {[t.destination for t in in_tables]}"
             )
         return in_tables[0]
-
-    def init_connection(self) -> DuckDBPyConnection:
-        os.makedirs(DUCK_DB_DIR, exist_ok=True)
-        config = dict(
-            temp_directory=DUCK_DB_DIR,
-            extension_directory=os.path.join(DUCK_DB_DIR, "extensions"),
-            threads=self.params.threads,
-            max_memory=f"{self.params.max_memory}MB",
-            motherduck_token=self.params.token,
-        )
-
-        try:
-            conn = duckdb.connect(database="md:", config=config)
-
-        except Exception:
-            raise UserException(
-                "Test connection failed, please check your configuration."
-            )
-
-        return conn
-
-    def create_temp_table(self, table_def: TableDefinition) -> DuckDBPyRelation:
-        table = self._connection.read_csv(
-            path_or_buffer=table_def.full_path,
-            delimiter=table_def.delimiter,
-            quotechar=table_def.enclosure,
-            header=table_def.has_header,
-            names=list(table_def.schema),
-            dtype={
-                col.source_name: col.dtype for col in self.params.destination.columns
-            },
-        )
-        return table
 
     def _init_storage_client(self) -> StorageClient:
         storage_token = self.environment_variables.token
@@ -227,12 +112,12 @@ class Component(ComponentBase):
 
     @sync_action("list_databases")
     def list_databases(self):
-        databases = self._connection.execute("SHOW ALL DATABASES").fetchall()
+        databases = self.db.connection.execute("SHOW ALL DATABASES").fetchall()
         return [SelectElement(d[0]) for d in databases]
 
     @sync_action("list_schemas")
     def list_schemas(self):
-        schemas = self._connection.execute(f"""
+        schemas = self.db.connection.execute(f"""
         SELECT schema_name
         FROM information_schema.schemata
         WHERE catalog_name = '{self.params.database}'
@@ -242,7 +127,7 @@ class Component(ComponentBase):
 
     @sync_action("list_tables")
     def list_tables(self):
-        tables = self._connection.execute(f"""
+        tables = self.db.connection.execute(f"""
         SELECT table_name
         FROM information_schema.tables
         WHERE table_catalog = '{self.params.database}'

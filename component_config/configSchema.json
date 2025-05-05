@@ -12,10 +12,16 @@
       "title": "Access Token",
       "description": "The MotherDuck access token. More information on how to get the token can be found in the <a href=\"https://motherduck.com/docs/key-tasks/authenticating-and-connecting-to-motherduck/authenticating-to-motherduck/#authentication-using-an-access-token\">documentation</a>.",
       "format": "password",
-      "propertyOrder": 1,
+      "propertyOrder": 1
+    },
+    "test_connection": {
+      "type": "button",
+      "format": "sync-action",
+      "propertyOrder": 2,
       "options": {
-        "dependencies": {
-          "provider": "abs"
+        "async": {
+          "label": "TEST CONNECTION",
+          "action": "validate_connection"
         }
       }
     },
@@ -31,7 +37,7 @@
           "autoload": []
         }
       },
-      "propertyOrder": 2
+      "propertyOrder": 3
     },
     "db_schema": {
       "type": "string",
@@ -44,7 +50,7 @@
           "action": "list_schemas"
         }
       },
-      "propertyOrder": 3
+      "propertyOrder": 4
     }
   }
 }
