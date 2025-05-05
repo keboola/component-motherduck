@@ -1,1 +1,1 @@
-Configuration description.
+At the configuration level, insert your MotherDuck token and select the database and schema. At the row level, choose the table to write to, the load type, and define the columns.
