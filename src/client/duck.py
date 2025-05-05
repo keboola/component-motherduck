@@ -69,9 +69,15 @@ class DuckConnection:
                 primary_key_columns.append(column.destination_name)
 
         if mode == "replace":
-            query = f"CREATE OR REPLACE TABLE {self.params.db}.{self.params.db_schema}.{self.params.table_name} ( "
+            query = (
+                f"CREATE OR REPLACE TABLE "
+                f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table} ( "
+            )
         elif mode == "if_not_exists":
-            query = f"CREATE TABLE IF NOT EXISTS {self.params.db}.{self.params.db_schema}.{self.params.table_name} ( "
+            query = (
+                f"CREATE TABLE IF NOT EXISTS "
+                f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table} ( "
+            )
         else:
             raise UserException(
                 f"Invalid mode: {mode}. Use 'if_not_exists' or 'replace'."
