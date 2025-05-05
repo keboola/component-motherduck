@@ -1,9 +1,8 @@
 import logging
 import os
-from typing import Literal
 
 import duckdb
-from duckdb.duckdb import DuckDBPyRelation
+from duckdb.duckdb import ConstraintException, DuckDBPyRelation
 from keboola.component.dao import (
     TableDefinition,
 )
@@ -16,6 +15,8 @@ class DuckConnection:
     def __init__(self, params):
         os.makedirs(DUCK_DB_DIR, exist_ok=True)
         self.params = params
+        self.destination = f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}"
+
         config = dict(
             temp_directory=DUCK_DB_DIR,
             extension_directory=os.path.join(DUCK_DB_DIR, "extensions"),
@@ -28,19 +29,60 @@ class DuckConnection:
             self.connection = duckdb.connect(database="md:", config=config)
 
         except Exception:
+            raise UserException("Test connection failed, please check your configuration.")
+
+    def upload_table(self, in_table_definition):
+        # table name is referenced in the query
+        kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
+
+        try:
+            strategy = "INSERT"
+            if self.params.destination.incremental:
+                self.create_db_table()
+                self._check_pks_consistency()
+
+                if [col.destination_name for col in self.params.destination.columns if col.pk]:
+                    # if primary key is defined, use UPSERT
+                    strategy = "INSERT OR REPLACE"
+            else:
+                self.create_db_table(replace_existing=True)
+
+            columns = ", ".join([f"{col.source_name}" for col in self.params.destination.columns])
+
+            self.connection.execute(f"""
+            {strategy} INTO {self.destination}
+            SELECT {columns} FROM kbc_input_table_relation
+            """)
+        except ConstraintException as e:
+            raise UserException(f"Error during data load: {e}") from e
+        finally:
+            self.connection.close()
+
+    def _check_pks_consistency(self):
+        """
+        Check if the primary key columns defined in the configuration
+        match the primary key columns in the destination table.
+        """
+        pk_selected = set([col.destination_name for col in self.params.destination.columns if col.pk])
+        pk_md_result = self.connection.execute(
+            f"""SELECT column_name
+             FROM (SHOW {self.destination})
+             WHERE key IS NOT NULL"""
+        ).fetchall()
+        pk_md = set([val[0] for val in pk_md_result])
+        if pk_selected != pk_md:
             raise UserException(
-                "Test connection failed, please check your configuration."
+                f"Defined primary key columns do not match destination table."
+                f"Defined: {pk_selected}, "
+                f"Mother duck table columns: {pk_md}"
             )
 
-    def create_db_table(
-        self,
-        mode: Literal["if_not_exists", "replace"],
-    ) -> None:
+    def create_db_table(self, replace_existing: bool = False) -> None:
         """
         Creates a db table based on column definitions.
 
         Args:
-            mode: The mode for table creation, either "if_not_exists" or "replace"
+            replace_existing: If True, replace the existing table.
 
         Returns:
             None
@@ -68,20 +110,10 @@ class DuckConnection:
             if column.pk:
                 primary_key_columns.append(column.destination_name)
 
-        if mode == "replace":
-            query = (
-                f"CREATE OR REPLACE TABLE "
-                f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table} ( "
-            )
-        elif mode == "if_not_exists":
-            query = (
-                f"CREATE TABLE IF NOT EXISTS "
-                f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table} ( "
-            )
+        if replace_existing:
+            query = f"CREATE OR REPLACE TABLE {self.destination} ( "
         else:
-            raise UserException(
-                f"Invalid mode: {mode}. Use 'if_not_exists' or 'replace'."
-            )
+            query = f"CREATE TABLE IF NOT EXISTS {self.destination} ( "
 
         # Add all column definitions
         query += ", ".join(column_specs)
@@ -105,8 +137,6 @@ class DuckConnection:
             quotechar=table_def.enclosure,
             header=table_def.has_header,
             names=list(table_def.schema),
-            dtype={
-                col.source_name: col.dtype for col in self.params.destination.columns
-            },
+            dtype={col.source_name: col.dtype for col in self.params.destination.columns},
         )
         return table
