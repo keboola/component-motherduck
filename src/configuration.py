@@ -31,7 +31,7 @@ class Destination(BaseModel):
 
 class Configuration(BaseModel):
     token: str = Field(alias="#token", default=None)
-    database: str = None
+    db: str = None
     db_schema: str = None
     destination: Destination = None
     debug: bool = False

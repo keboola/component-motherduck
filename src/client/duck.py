@@ -9,8 +9,6 @@ from keboola.component.dao import (
 )
 from keboola.component.exceptions import UserException
 
-from src.configuration import ColumnConfig
-
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
 
 
@@ -36,20 +34,12 @@ class DuckConnection:
 
     def create_db_table(
         self,
-        database: str,
-        db_schema: str,
-        table_name: str,
-        columns_config: list[ColumnConfig],
         mode: Literal["if_not_exists", "replace"],
     ) -> None:
         """
         Creates a db table based on column definitions.
 
         Args:
-            database: The database name
-            db_schema: The schema name
-            table_name: The name of the table to create
-            columns_config: List of ColumnConfig objects defining the columns
             mode: The mode for table creation, either "if_not_exists" or "replace"
 
         Returns:
@@ -58,7 +48,7 @@ class DuckConnection:
         column_specs = []
         primary_key_columns = []
 
-        for column in columns_config:
+        for column in self.params.destination.columns:
             column_definition = f"{column.destination_name} {column.dtype}"
 
             if not column.nullable:
@@ -79,9 +69,9 @@ class DuckConnection:
                 primary_key_columns.append(column.destination_name)
 
         if mode == "replace":
-            query = f"CREATE OR REPLACE TABLE {database}.{db_schema}.{table_name} ( "
+            query = f"CREATE OR REPLACE TABLE {self.params.db}.{self.params.db_schema}.{self.params.table_name} ( "
         elif mode == "if_not_exists":
-            query = f"CREATE TABLE IF NOT EXISTS {database}.{db_schema}.{table_name} ( "
+            query = f"CREATE TABLE IF NOT EXISTS {self.params.db}.{self.params.db_schema}.{self.params.table_name} ( "
         else:
             raise UserException(
                 f"Invalid mode: {mode}. Use 'if_not_exists' or 'replace'."
@@ -101,7 +91,6 @@ class DuckConnection:
             logging.debug(f"Executing query: {query}")
 
         self.connection.execute(query)
-
 
     def create_temp_table(self, table_def: TableDefinition) -> DuckDBPyRelation:
         table = self.connection.read_csv(

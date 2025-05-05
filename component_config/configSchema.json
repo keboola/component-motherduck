@@ -21,7 +21,7 @@
       "options": {
         "async": {
           "label": "TEST CONNECTION",
-          "action": "validate_connection"
+          "action": "testConnection"
         }
       }
     },

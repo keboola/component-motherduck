@@ -31,13 +31,7 @@ class Component(ComponentBase):
 
         try:
             if self.params.destination.incremental:
-                self.db.create_db_table(
-                    database=self.params.database,
-                    db_schema=self.params.db_schema,
-                    table_name=self.params.destination.table,
-                    columns_config=self.params.destination.columns,
-                    mode="if_not_exists",
-                )
+                self.db.create_db_table("if_not_exists")
 
                 self.check_pks_consistency()
 
@@ -48,13 +42,7 @@ class Component(ComponentBase):
                     strategy = "INSERT"
 
             else:
-                self.db.create_db_table(
-                    database=self.params.database,
-                    db_schema=self.params.db_schema,
-                    table_name=self.params.destination.table,
-                    columns_config=self.params.destination.columns,
-                    mode="replace",
-                )
+                self.db.create_db_table(mode="replace")
 
                 strategy = "INSERT"
 
@@ -63,7 +51,7 @@ class Component(ComponentBase):
             )
 
             self.db.connection.execute(f"""
-            {strategy} INTO {self.params.database}.{self.params.db_schema}.{self.params.destination.table}
+            {strategy} INTO {self.params.db}.{self.params.db_schema}.{self.params.destination.table}
             SELECT {columns} FROM kbc_input_table_relation
             """)
         except ConstraintException as e:
@@ -82,7 +70,7 @@ class Component(ComponentBase):
         )
         pk_md_result = self.db.connection.execute(
             f"""SELECT column_name
-             FROM (SHOW {self.params.database}.{self.params.db_schema}.{self.params.destination.table})
+             FROM (SHOW {self.params.db}.{self.params.db_schema}.{self.params.destination.table})
              WHERE key IS NOT NULL"""
         ).fetchall()
         pk_md = set([val[0] for val in pk_md_result])
@@ -120,7 +108,7 @@ class Component(ComponentBase):
         schemas = self.db.connection.execute(f"""
         SELECT schema_name
         FROM information_schema.schemata
-        WHERE catalog_name = '{self.params.database}'
+        WHERE catalog_name = '{self.params.db}'
         """).fetchall()
 
         return [SelectElement(s[0]) for s in schemas]
@@ -130,7 +118,7 @@ class Component(ComponentBase):
         tables = self.db.connection.execute(f"""
         SELECT table_name
         FROM information_schema.tables
-        WHERE table_catalog = '{self.params.database}'
+        WHERE table_catalog = '{self.params.db}'
         AND table_schema = '{self.params.db_schema}'
         """).fetchall()
 
@@ -138,32 +126,11 @@ class Component(ComponentBase):
 
     @sync_action("return_columns_data")
     def return_columns_data(self):
-        def map_to_duckdb_type(keboola_type: str) -> str:
-            """
-            Maps Keboola data types to DuckDB data types.
-
-            Args:
-                keboola_type: The Keboola data type
-
-            Returns:
-                str: Corresponding DuckDB data type
-            """
-            type_mapping = {
-                "STRING": "VARCHAR",
-                "INTEGER": "INTEGER",
-                "NUMERIC": "DECIMAL",
-                "FLOAT": "FLOAT",
-                "BOOLEAN": "BOOLEAN",
-                "DATE": "DATE",
-                "TIMESTAMP": "TIMESTAMP",
-            }
-            return type_mapping.get(keboola_type, keboola_type)
-
         if self.params.destination.columns:
             columns = []
             for col in self.params.destination.columns:
                 col_data = col.model_dump()
-                col_data["dtype"] = map_to_duckdb_type(col_data["dtype"])
+                col_data["dtype"] = self.map_to_duckdb_type(col_data["dtype"])
                 columns.append(col_data)
         else:
             if len(self.configuration.tables_input_mapping) != 1:
@@ -172,46 +139,7 @@ class Component(ComponentBase):
                     f"{[t.destination for t in self.configuration.tables_input_mapping]}"
                 )
 
-            table_id = self.configuration.tables_input_mapping[0].source
-            storage_client = self._init_storage_client()
-            table_detail = storage_client.tables.detail(table_id)
-
-            columns = []
-
-            if table_detail.get("isTyped", False) and table_detail.get("definition"):
-                primary_keys = set(
-                    table_detail["definition"].get("primaryKeysNames", [])
-                )
-
-                for column in table_detail["definition"]["columns"]:
-                    col_name = column["name"]
-                    col_def = column["definition"]
-                    keboola_type = col_def.get("type", "VARCHAR")
-
-                    columns.append(
-                        ColumnConfig(
-                            source_name=col_name,
-                            destination_name=col_name,
-                            dtype=map_to_duckdb_type(keboola_type),
-                            pk=col_name in primary_keys,
-                            nullable=col_def.get("nullable", True),
-                            default_value=None,
-                        ).model_dump()
-                    )
-            else:  # Non-typed table
-                primary_keys = set(table_detail.get("primaryKey", []))
-
-                for col_name in table_detail.get("columns", []):
-                    columns.append(
-                        ColumnConfig(
-                            source_name=col_name,
-                            destination_name=col_name,
-                            dtype="VARCHAR",
-                            pk=col_name in primary_keys,
-                            nullable=col_name not in primary_keys,
-                            default_value=None,
-                        ).model_dump()
-                    )
+            columns = self.get_sapi_column_definition()
 
         return {
             "type": "data",
@@ -224,6 +152,71 @@ class Component(ComponentBase):
                 "debug": self.params.debug,
             },
         }
+
+    def map_to_duckdb_type(self, keboola_type: str) -> str:
+        """
+        Maps Keboola data types to DuckDB data types.
+
+        Args:
+            keboola_type: The Keboola data type
+
+        Returns:
+            str: Corresponding DuckDB data type
+        """
+        type_mapping = {
+            "STRING": "VARCHAR",
+            "INTEGER": "INTEGER",
+            "NUMERIC": "DECIMAL",
+            "FLOAT": "FLOAT",
+            "BOOLEAN": "BOOLEAN",
+            "DATE": "DATE",
+            "TIMESTAMP": "TIMESTAMP",
+        }
+        return type_mapping.get(keboola_type, keboola_type)
+
+    def get_sapi_column_definition(self):
+        table_id = self.configuration.tables_input_mapping[0].source
+        storage_client = self._init_storage_client()
+        table_detail = storage_client.tables.detail(table_id)
+        columns = []
+        if table_detail.get("isTyped") and table_detail.get("definition"):
+            primary_keys = set(table_detail["definition"].get("primaryKeysNames", []))
+            columns_to_process = [
+                {
+                    "name": column["name"],
+                    "dtype": self.map_to_duckdb_type(
+                        column["definition"].get("type", "VARCHAR")
+                    ),
+                    "nullable": column["definition"].get("nullable", True),
+                }
+                for column in table_detail["definition"]["columns"]
+            ]
+
+        else:  # non-typed table
+            primary_keys = set(table_detail.get("primaryKey", []))
+            columns_to_process = [
+                {
+                    "name": col_name,
+                    "dtype": "VARCHAR",
+                    "nullable": col_name not in primary_keys,
+                }
+                for col_name in table_detail.get("columns", [])
+            ]
+
+        # Create column configs for all columns
+        for col_info in columns_to_process:
+            col_name = col_info["name"]
+            columns.append(
+                ColumnConfig(
+                    source_name=col_name,
+                    destination_name=col_name,
+                    dtype=col_info["dtype"],
+                    pk=col_name in primary_keys,
+                    nullable=col_info["nullable"],
+                    default_value=None,
+                ).model_dump()
+            )
+        return columns
 
 
 """
