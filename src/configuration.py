@@ -23,7 +23,6 @@ class Destination(BaseModel):
     table: str
     columns: list[ColumnConfig] = []
     load_type: LoadType = Field(default=LoadType.incremental_load)
-    preserve_insertion_order: bool = True
 
     @computed_field
     def incremental(self) -> bool:

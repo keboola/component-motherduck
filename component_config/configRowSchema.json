@@ -43,7 +43,7 @@
               "parquet_output": false
             }
           },
-          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
+          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. If Incremental Load is used without a defined primary key, all rows will be appended.\n",
           "propertyOrder": 2
         },
         "columns": {
@@ -160,14 +160,6 @@
               "action": "return_columns_data"
             }
           }
-        },
-        "preserve_insertion_order": {
-          "type": "boolean",
-          "title": "Preserve insertion order",
-          "format": "checkbox",
-          "default": true,
-          "description": "If enabled, the extractor will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
-          "propertyOrder": 5
         }
       },
       "propertyOrder": 1

@@ -6,6 +6,7 @@ Template Component main class.
 import logging
 import os
 from typing import Literal
+import time
 
 import duckdb
 from duckdb.duckdb import DuckDBPyConnection, DuckDBPyRelation
@@ -32,6 +33,8 @@ class Component(ComponentBase):
         """
         Main execution code
         """
+
+        start_time = time.time()
 
         in_table_definition = self.get_in_table()
 
@@ -79,6 +82,7 @@ class Component(ComponentBase):
             raise UserException(f"Error during data load: {e}") from e
         finally:
             self._connection.close()
+            logging.debug(f"Execution time: {time.time() - start_time:.2f} seconds")
 
     def check_pks_consistency(self):
         """
@@ -196,12 +200,6 @@ class Component(ComponentBase):
             raise UserException(
                 "Test connection failed, please check your configuration."
             )
-
-        if (
-            self.params.destination
-            and not self.params.destination.preserve_insertion_order
-        ):
-            conn.execute("SET preserve_insertion_order = false;").fetchall()
 
         return conn
 
@@ -337,7 +335,6 @@ class Component(ComponentBase):
                     "table": self.params.destination.table,
                     "load_type": self.params.destination.load_type,
                     "columns": columns,
-                    "preserve_insertion_order": self.params.destination.preserve_insertion_order,
                 },
                 "debug": self.params.debug,
             },
