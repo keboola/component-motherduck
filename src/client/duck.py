@@ -15,7 +15,7 @@ class DuckConnection:
     def __init__(self, params):
         os.makedirs(DUCK_DB_DIR, exist_ok=True)
         self.params = params
-        self.destination = f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}"
+        self.destination = None
 
         config = dict(
             temp_directory=DUCK_DB_DIR,
@@ -31,7 +31,9 @@ class DuckConnection:
         except Exception:
             raise UserException("Test connection failed, please check your configuration.")
 
-    def upload_table(self, in_table_definition):
+    def upload_table(self, in_table_definition, destination: str):
+        self.destination = destination
+
         # table name is referenced in the query
         kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
 

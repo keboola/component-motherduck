@@ -34,7 +34,9 @@
         "async": {
           "label": "Load databases",
           "action": "list_databases",
-          "autoload": []
+          "autoload": [
+            "parameters.#token"
+          ]
         }
       },
       "propertyOrder": 3
@@ -47,7 +49,10 @@
       "options": {
         "async": {
           "label": "Load schemas",
-          "action": "list_schemas"
+          "action": "list_schemas",
+          "autoload": [
+            "parameters.database"
+          ]
         }
       },
       "propertyOrder": 4
