@@ -28,6 +28,7 @@
     "database": {
       "type": "string",
       "enum": [],
+      "default": "",
       "title": "Database",
       "format": "select",
       "options": {
@@ -44,6 +45,7 @@
     "db_schema": {
       "type": "string",
       "enum": [],
+      "default": "",
       "title": "Schema",
       "format": "select",
       "options": {
