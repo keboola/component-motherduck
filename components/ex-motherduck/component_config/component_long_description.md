@@ -1,0 +1,1 @@
+MotherDuck Writer writes data from KBC to MotherDuck. It allows you to specify which columns to write, their data types, nullability, and default values. The component supports full load, append, and upsert modes.
