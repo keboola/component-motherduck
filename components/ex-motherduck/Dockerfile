@@ -14,4 +14,3 @@ COPY /components/${COMPONENT_DIR} /code/
 WORKDIR /code/
 
 CMD ["python", "-u", "/code/src/component.py"]
-CMD ["python", "-u", "/code/src/component.py"]

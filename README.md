@@ -1,6 +1,6 @@
 # KBC MotherDuck Components
 
-Repository contains following components:
+Repository contains the following components:
 - ex-motherduck
 - wr-motherduck
 
