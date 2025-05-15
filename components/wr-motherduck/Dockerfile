@@ -3,8 +3,6 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ARG COMPONENT_DIR="wr-motherduck"
 
-WORKDIR /code/
-
 COPY /components/${COMPONENT_DIR}/pyproject.toml .
 
 RUN uv pip install --system .

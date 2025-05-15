@@ -58,7 +58,7 @@ class Component(ComponentBase):
             logging.debug(f"Running query: {q}; ")
             start = time.time()
             self.db.execute(q)
-            logging.debug(f"Query finished successfully in {time.time() - start} seconds")
+            logging.debug(f"Query finished successfully in {time.time() - start:.2f} seconds")
         finally:
             self.db.close()
 
@@ -69,32 +69,31 @@ class Component(ComponentBase):
     def init_connection(self):
         os.makedirs(DUCK_DB_DIR, exist_ok=True)
 
-        config = dict(
-            temp_directory=DUCK_DB_DIR,
-            extension_directory=os.path.join(DUCK_DB_DIR, "extensions"),
-            threads=self.params.threads,
-            max_memory=f"{self.params.max_memory}MB",
-            motherduck_token=self.params.token,
-        )
+        config = {
+            "temp_directory": DUCK_DB_DIR,
+            "extension_directory": os.path.join(DUCK_DB_DIR, "extensions"),
+            "threads": self.params.threads,
+            "max_memory": f"{self.params.max_memory}MB",
+            "motherduck_token":self.params.token
+        }
 
         conn = duckdb.connect(database="md:", config=config)
 
         if not self.params.destination.preserve_insertion_order:
-            conn.execute("SET preserve_insertion_order = false;").fetchall()
+            conn.execute("SET preserve_insertion_order = false;")
 
         return conn
 
     def get_query(self, table_path: str) -> str:
-        if self.params.data_selection.mode == "custom_query":
-            query = self.params.data_selection.query.lower().replace("from in_table ", f"FROM {table_path}")
-        elif self.params.data_selection.mode == "select_columns":
-            query = f"""
-            SELECT {", ".join(self.params.data_selection.columns)}
-            FROM {table_path}"""
-        elif self.params.data_selection.mode == "all_data":
-            query = f"SELECT * FROM {table_path}"
-        else:
-            raise UserException("Invalid data selection mode")
+        match self.params.data_selection.mode:
+            case "custom_query":
+                query = self.params.data_selection.query.lower().replace("from in_table ", f"FROM {table_path}")
+            case "select_columns":
+                query = f"SELECT {", ".join(self.params.data_selection.columns)} FROM {table_path}"
+            case "all_data":
+                query = f"SELECT * FROM {table_path}"
+            case _:
+                raise UserException("Invalid data selection mode")
 
         return query
 
@@ -185,10 +184,13 @@ class Component(ComponentBase):
     @sync_action("query_preview")
     def query_preview(self):
         table_path = f"{self.params.db}.{self.params.db_schema}.{self.params.data_selection.table}"
-        query = self.params.data_selection.query.lower().replace("from in_table", f"FROM {table_path}")
+        query = self.params.data_selection.query % table_path
 
         if "limit" not in query.lower():
-            query = f"{query} LIMIT 10;"
+            if ";" in query:
+                query = query.replace(";", " LIMIT 10;")
+            else:
+                query = f"{query} LIMIT 10;"
 
         out = self.db.execute(query).pl()
         formatted_output = self.to_markdown(out)

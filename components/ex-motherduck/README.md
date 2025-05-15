@@ -1,7 +1,7 @@
-MotherDuck Writer
-=============
+MotherDuck Extractor
+=================
 
-A Keboola component that writes data from KBC to MotherDuck.
+A Keboola component that extracts data from MotherDuck to KBC.
 
 **Table of Contents:**
 
@@ -10,7 +10,7 @@ A Keboola component that writes data from KBC to MotherDuck.
 Functionality Notes
 ===================
 
-This component writes data from KBC to MotherDuck. It allows you to specify which columns to write, their data types, nullability, and default values. The component supports full load, append, and upsert modes.
+This component extracts data from MotherDuck to KBC. It allows you to select specific tables, columns, or use custom queries to fetch data from your MotherDuck database.
 
 Prerequisites
 =============
@@ -24,12 +24,10 @@ Features
 |-------------------------|-------------------------------------------------------------------|
 | Authentication          | Connect using MotherDuck access tokens                            |
 | Database Selection      | Select specific database and schema for operations                |
+| Data Selection          | Multiple modes: All data, select columns, or custom queries       |
 | Load Types              | Support for both incremental and full load operations             |
-| Column Configuration    | Detailed column mapping with type control                         |
 | Primary Key Support     | Define primary keys for data integrity                            |
-| Data Type Management    | Support for various DuckDB data types                             |
-| Nullable Columns        | Configure whether columns can contain NULL values                 |
-| Default Values          | Set default values for columns                                    |
+| Preview Capabilities    | Preview table data and query results                              |
 | Debug Mode              | Enable detailed logging for troubleshooting                       |
 | Multi-threading         | Configurable number of threads for performance optimization       |
 | Memory Management       | Control maximum memory usage during operations                    |
@@ -43,52 +41,39 @@ Connection Parameters
 | **Parameter**   | **Description**                               | **Required** |
 |-----------------|-----------------------------------------------|--------------|
 | #token          | MotherDuck access token for authentication    | Yes          |
-| database        | Target database in MotherDuck                 | Yes          |
+| db              | Target database in MotherDuck                 | Yes          |
 | db_schema       | Target schema within the database             | Yes          |
 | debug           | Enable detailed logging (default: false)      | No           |
 | threads         | Number of threads to use (default: 1)         | No           |
 | max_memory      | Maximum memory usage in MB (default: 256)     | No           |
 
-Table Configuration
-------------------
+Data Selection Configuration
+---------------------------
 
-For each table you want to configure, you need to specify:
+The component supports three modes for selecting data:
 
-| **Parameter**   | **Description**                               | **Required** |
-|-----------------|-----------------------------------------------|--------------|
-| destination.table | Target table name                          | Yes          |
-| destination.load_type | Load type: "incremental_load" or "full_load" (default: "incremental_load") | No |
-| destination.columns | Column configurations (see below)        | Yes          |
+| **Mode**        | **Description**                                           |
+|-----------------|-----------------------------------------------------------|
+| all_data        | Extract all data from the selected table                  |
+| select_columns  | Extract only specified columns from the selected table    |
+| custom_query    | Use a custom SQL query to extract data                    |
 
-Column Configuration
--------------------
+For the "select_columns" mode, you need to specify which columns to extract. For the "custom_query" mode, you provide a SQL query where "in_table" will be replaced with the actual table path.
 
-For each column in a table, you can specify:
+Destination Configuration
+------------------------
 
-| **Parameter**     | **Description**                             | **Required** |
-|-------------------|---------------------------------------------|--------------|
-| source_name       | Name of the source column                   | Yes          |
-| destination_name  | Name of the column in the destination table | Yes          |
-| dtype             | Data type (VARCHAR, INTEGER, etc.)          | No           |
-| pk                | Whether column is a primary key             | No           |
-| nullable          | Whether column can contain NULL values      | No           |
-| default_value     | Default value for the column                | No           |
-
-Supported Data Types
--------------------
-
-The component supports various DuckDB data types including:
-- BIGINT, INTEGER, SMALLINT, TINYINT (and unsigned variants)
-- BOOLEAN, BIT
-- VARCHAR, JSON, UUID
-- DECIMAL, DOUBLE, FLOAT
-- DATE, TIME, TIMESTAMP
-- And more
+| **Parameter**            | **Description**                                           | **Required** |
+|--------------------------|-----------------------------------------------------------|--------------|
+| load_type                | "incremental_load" or "full_load" (default: "incremental_load") | No |
+| primary_key              | Columns to use as primary keys for incremental loading    | No          |
+| table_name               | Custom name for the output table                          | No          |
+| preserve_insertion_order | Whether to preserve the order of rows (default: true)     | No          |
 
 Output
 ======
 
-The component outputs data to the specified MotherDuck database and schema, according to the configured tables and columns.
+The component extracts data from MotherDuck and loads it into KBC tables according to the configured settings.
 
 Development
 -----------

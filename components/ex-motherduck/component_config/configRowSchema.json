@@ -36,7 +36,7 @@
         "query": {
           "type": "string",
           "title": "Query",
-          "description": "The SQL query that will be used to extract data. Use the placeholder in_table to reference the input table in your query. For example: `SELECT * FROM in_table WHERE is_active = true`",
+          "description": "The SQL query that will be used to extract data. Use the placeholder %s to reference the input table in your query. For example: `SELECT * FROM %s WHERE is_active = true`",
           "propertyOrder": 32,
           "options": {
             "tooltip": "For query preview, a LIMIT 10 is automatically added to ensure completion within the 30-second time limit for sync actions. When the query is run as a job, it is executed without any modifications.",

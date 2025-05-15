@@ -11,7 +11,6 @@ on:
       - '*' # Skip the workflow on the main branch without tag
     paths:
       - 'components/wr-motherduck/**'
-      - '../../components/common'
       - '.github/workflows/**'
 
 concurrency: ci-${{ github.workflow }}-${{ github.ref }}

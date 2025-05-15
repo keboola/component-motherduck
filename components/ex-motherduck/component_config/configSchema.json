@@ -25,7 +25,7 @@
         }
       }
     },
-    "database": {
+    "db": {
       "type": "string",
       "enum": [],
       "default": "",

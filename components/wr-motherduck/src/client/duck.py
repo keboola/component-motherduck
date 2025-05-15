@@ -17,13 +17,13 @@ class DuckConnection:
         self.params = params
         self.destination = None
 
-        config = dict(
-            temp_directory=DUCK_DB_DIR,
-            extension_directory=os.path.join(DUCK_DB_DIR, "extensions"),
-            threads=params.threads,
-            max_memory=f"{params.max_memory}MB",
-            motherduck_token=params.token,
-        )
+        config = {
+            "temp_directory": DUCK_DB_DIR,
+            "extension_directory": os.path.join(DUCK_DB_DIR, "extensions"),
+            "threads": params.threads,
+            "max_memory": f"{params.max_memory}MB",
+            "motherduck_token": params.token,
+        }
 
         try:
             self.connection = duckdb.connect(database="md:", config=config)
