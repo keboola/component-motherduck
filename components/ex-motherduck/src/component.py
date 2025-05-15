@@ -40,10 +40,10 @@ class Component(ComponentBase):
                     primary_key=c[3] == "PRI" if not self.params.destination.primary_key else False,
                 )
                 for c in table_meta
-            }
+            } # c[0] is the column name, c[1] is the data type, c[3] is the primary key
         )
 
-        table_name = self.params.data_selection.table or self.params.data_selection.table
+        table_name = self.params.destination.table_name or self.params.data_selection.table
 
         out_table = self.create_out_table_definition(
             f"{table_name}.csv",

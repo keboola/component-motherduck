@@ -1,8 +1,6 @@
 [project]
-name = "cookiecutter"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+name = "ex-motherduck"
+version = "0.0.8"
 requires-python = ">=3.13"
 dependencies = [
     "flake8>=7.2.0",
