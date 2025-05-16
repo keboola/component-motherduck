@@ -3,7 +3,7 @@
   "title": "Connection",
   "required": [
     "#token",
-    "database",
+    "db",
     "db_schema"
   ],
   "properties": {

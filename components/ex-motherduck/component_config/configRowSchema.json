@@ -2,7 +2,6 @@
   "type": "object",
   "title": "Component configuration",
   "required": [
-    "source",
     "data_selection",
     "destination",
     "debug"
@@ -90,14 +89,6 @@
         "load_type"
       ],
       "properties": {
-        "parquet_output": {
-          "type": "boolean",
-          "title": "Store result as parquet",
-          "format": "checkbox",
-          "default": false,
-          "description": "If enabled, the extractor will store result as parquet file into file storage instead of table",
-          "propertyOrder": 41
-        },
         "load_type": {
           "enum": [
             "incremental_load",
@@ -110,10 +101,7 @@
             "enum_titles": [
               "Incremental Load",
               "Full Load"
-            ],
-            "dependencies": {
-              "parquet_output": false
-            }
+            ]
           },
           "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
           "propertyOrder": 42
@@ -131,9 +119,6 @@
             "async": {
               "label": "Re-load columns",
               "action": "list_columns"
-            },
-            "dependencies": {
-              "parquet_output": false
             }
           },
           "uniqueItems": true,
@@ -143,25 +128,8 @@
           "type": "string",
           "title": "Table name",
           "default": "",
-          "description": "(Optional) Specify the table name (without the filetype) if you leave this field empty, the default name container_blob will be used.",
-          "options": {
-            "dependencies": {
-              "parquet_output": false
-            }
-          },
+          "description": "(Optional) Specify the table name (without the file extension). If you leave this field empty, the name of the source table from the database will be used.",
           "propertyOrder": 44
-        },
-        "file_name": {
-          "type": "string",
-          "title": "File name",
-          "default": "",
-          "description": "(Optional) Specify the file name (without the filetype) if you leave this field empty, the default name container_blob will be used. The resulting file will be named `<table_name>.parquet`",
-          "options": {
-            "dependencies": {
-              "parquet_output": true
-            }
-          },
-          "propertyOrder": 45
         },
         "preserve_insertion_order": {
           "type": "boolean",
