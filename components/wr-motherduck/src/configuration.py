@@ -20,7 +20,7 @@ class ColumnConfig(BaseModel):
 
 
 class Destination(BaseModel):
-    table: str
+    table: str = Field(default=None)
     columns: list[ColumnConfig] = []
     load_type: LoadType = Field(default=LoadType.incremental_load)
 

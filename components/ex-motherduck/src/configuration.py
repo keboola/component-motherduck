@@ -38,7 +38,7 @@ class Configuration(BaseModel):
     token: str = Field(alias="#token", default=None)
     db: str = None
     db_schema: str = None
-    destination: Destination = None
+    destination: Destination = Field(default_factory=Destination)
     data_selection: DataSelection = None
     debug: bool = False
     threads: int = 1
