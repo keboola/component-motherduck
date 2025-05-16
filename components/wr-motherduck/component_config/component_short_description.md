@@ -1,0 +1,1 @@
+MotherDuck is a cloud data warehouse built on top of DuckDB

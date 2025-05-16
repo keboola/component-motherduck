@@ -1,0 +1,1 @@
+https://github.com/keboola/component-motherduck/blob/master/LICENSE.md

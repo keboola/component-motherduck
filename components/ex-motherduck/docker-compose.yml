@@ -1,0 +1,24 @@
+services:
+  # for development purposes
+  dev:
+    build:
+      context: ../../
+      dockerfile: components/ex-motherduck/Dockerfile
+    volumes:
+        - ./:/code
+        - ./data:/data
+    environment:
+      - KBC_DATADIR=./data
+  test:
+    # Use to run flake8 and unittests checks
+    build:
+      context: ../../
+      dockerfile: components/ex-motherduck/Dockerfile
+    volumes:
+      - ./:/code
+      - ./data:/data
+    environment:
+      - KBC_DATADIR=./data
+    command:
+      - /bin/sh
+      - /code/scripts/build_n_test.sh
