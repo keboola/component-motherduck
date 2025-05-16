@@ -14,6 +14,31 @@
         "mode"
       ],
       "properties": {
+        "table": {
+          "enum": [],
+          "type": "string",
+          "title": "Table",
+          "format": "select",
+          "options": {
+            "async": {
+              "label": "Load tables",
+              "action": "list_tables",
+              "autoload": []
+            }
+          },
+          "propertyOrder": 1
+        },
+        "table_preview": {
+          "type": "button",
+          "format": "sync-action",
+          "options": {
+            "async": {
+              "label": "Table preview",
+              "action": "table_preview"
+            }
+          },
+          "propertyOrder": 2
+        },
         "mode": {
           "enum": [
             "all_data",
@@ -44,7 +69,7 @@
             }
           }
         },
-        "table_preview": {
+        "query_preview": {
           "type": "button",
           "format": "sync-action",
           "options": {
