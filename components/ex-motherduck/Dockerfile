@@ -3,12 +3,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ARG COMPONENT_DIR="ex-motherduck"
 
-COPY /components/${COMPONENT_DIR}/pyproject.toml .
+WORKDIR /code/
 
-RUN uv pip install --system .
+COPY /components/${COMPONENT_DIR}/pyproject.toml .
+COPY /components/${COMPONENT_DIR}/uv.lock .
+
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
+RUN uv sync --all-groups --frozen
 
 COPY /components/${COMPONENT_DIR} /code/
-
-WORKDIR /code/
 
 CMD ["python", "-u", "/code/src/component.py"]

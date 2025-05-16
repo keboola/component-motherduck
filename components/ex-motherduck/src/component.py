@@ -40,7 +40,7 @@ class Component(ComponentBase):
                     primary_key=c[3] == "PRI" if not self.params.destination.primary_key else False,
                 )
                 for c in table_meta
-            } # c[0] is the column name, c[1] is the data type, c[3] is the primary key
+            }  # c[0] is the column name, c[1] is the data type, c[3] is the primary key
         )
 
         table_name = self.params.destination.table_name or self.params.data_selection.table
@@ -74,7 +74,7 @@ class Component(ComponentBase):
             "extension_directory": os.path.join(DUCK_DB_DIR, "extensions"),
             "threads": self.params.threads,
             "max_memory": f"{self.params.max_memory}MB",
-            "motherduck_token":self.params.token
+            "motherduck_token": self.params.token
         }
 
         conn = duckdb.connect(database="md:", config=config)
