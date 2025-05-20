@@ -1,6 +1,6 @@
 [project]
 name = "wr-motherduck"
-version = "0.0.8"
+dynamic = ["version"]
 requires-python = ">=3.13"
 dependencies = [
     "flake8>=7.2.0",
