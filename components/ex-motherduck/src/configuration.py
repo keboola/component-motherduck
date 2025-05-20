@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 from keboola.component.exceptions import UserException
 from pydantic import BaseModel, Field, ValidationError, computed_field
@@ -16,7 +17,7 @@ class LoadType(str, Enum):
 
 
 class Destination(BaseModel):
-    table_name: str = Field(default=None)
+    table_name: Optional[str] = None
     load_type: LoadType = Field(default=LoadType.incremental_load)
     primary_key: list[str] = Field(default_factory=list)
     preserve_insertion_order: bool = True
@@ -28,18 +29,18 @@ class Destination(BaseModel):
 
 
 class DataSelection(BaseModel):
-    table: str = Field(default=None)
+    table: Optional[str] = None
     mode: DataSelectionMode = Field(default=DataSelectionMode.all_data)
     columns: list[str] = Field(default_factory=list)
-    query: str = Field(default=None)
+    query: Optional[str] = None
 
 
 class Configuration(BaseModel):
-    token: str = Field(alias="#token", default=None)
-    db: str = None
-    db_schema: str = None
+    token: str = Field(alias="#token")
+    db: str = Optional[None]
+    db_schema: str = Optional[None]
     destination: Destination = Field(default_factory=Destination)
-    data_selection: DataSelection = None
+    data_selection: DataSelection = Field(default_factory=DataSelection)
     debug: bool = False
     threads: int = 1
     max_memory: int = 256

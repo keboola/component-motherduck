@@ -20,8 +20,8 @@ class ColumnConfig(BaseModel):
 
 
 class Destination(BaseModel):
-    table: str = Field(default=None)
-    columns: list[ColumnConfig] = []
+    table: Optional[str] = None
+    columns: list[ColumnConfig] = Field(default_factory=list)
     load_type: LoadType = Field(default=LoadType.incremental_load)
 
     @computed_field
@@ -30,10 +30,10 @@ class Destination(BaseModel):
 
 
 class Configuration(BaseModel):
-    token: str = Field(alias="#token", default=None)
-    db: str = None
-    db_schema: str = None
-    destination: Destination = None
+    token: str = Field(alias="#token")
+    db: Optional[str] = None
+    db_schema: Optional[str] = None
+    destination: Destination = Field(default_factory=Destination)
     debug: bool = False
     threads: int = 1
     max_memory: int = 256

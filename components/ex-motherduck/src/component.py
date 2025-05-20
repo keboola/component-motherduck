@@ -74,7 +74,7 @@ class Component(ComponentBase):
             "extension_directory": os.path.join(DUCK_DB_DIR, "extensions"),
             "threads": self.params.threads,
             "max_memory": f"{self.params.max_memory}MB",
-            "motherduck_token": self.params.token
+            "motherduck_token": self.params.token,
         }
 
         conn = duckdb.connect(database="md:", config=config)
@@ -89,7 +89,7 @@ class Component(ComponentBase):
             case "custom_query":
                 query = self.params.data_selection.query.lower().replace("from in_table ", f"FROM {table_path}")
             case "select_columns":
-                query = f"SELECT {", ".join(self.params.data_selection.columns)} FROM {table_path}"
+                query = f"SELECT {', '.join(self.params.data_selection.columns)} FROM {table_path}"
             case "all_data":
                 query = f"SELECT * FROM {table_path}"
             case _:
