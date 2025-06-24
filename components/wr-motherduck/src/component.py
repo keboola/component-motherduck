@@ -1,12 +1,12 @@
 import logging
 import time
 
-from kbcstorage.client import Client as StorageClient
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
 
 from client.duck import DuckConnection
+from client.storage_api import SAPIClient
 from configuration import ColumnConfig, Configuration
 
 
@@ -37,11 +37,6 @@ class Component(ComponentBase):
             raise UserException(f"Exactly one input table is expected. Found: {[t.destination for t in in_tables]}")
         return in_tables[0]
 
-    def _init_storage_client(self) -> StorageClient:
-        storage_token = self.environment_variables.token
-        storage_client = StorageClient(self.environment_variables.url, storage_token)
-        return storage_client
-
     @staticmethod
     def _map_to_duckdb_type(keboola_type: str) -> str:
         """
@@ -66,8 +61,8 @@ class Component(ComponentBase):
 
     def _get_sapi_column_definition(self):
         table_id = self.configuration.tables_input_mapping[0].source
-        storage_client = self._init_storage_client()
-        table_detail = storage_client.tables.detail(table_id)
+        storage_client = SAPIClient(self.environment_variables.url, self.environment_variables.token)
+        table_detail = storage_client.get_table_detail(table_id)
         columns = []
         if table_detail.get("isTyped") and table_detail.get("definition"):
             primary_keys = set(table_detail["definition"].get("primaryKeysNames", []))
