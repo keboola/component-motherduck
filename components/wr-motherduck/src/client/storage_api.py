@@ -21,9 +21,9 @@ class SAPIClient:
                 with urllib.request.urlopen(req) as response:
                     response_data = response.read().decode("utf-8")
                     return json.loads(response_data)
-            except (urllib.error.URLError, urllib.error.HTTPError) as e:
+            except Exception as e:
                 last_exception = e
-                logging.info(f"Attempt {attempt + 1} failed: {e}")
+                logging.warning(f"Attempt {attempt + 1} failed: {e}")
                 if attempt < self.retry_attempts - 1:
                     time.sleep(attempt + 1)
 
