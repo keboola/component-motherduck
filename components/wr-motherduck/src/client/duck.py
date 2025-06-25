@@ -158,7 +158,7 @@ class DuckConnection:
 
         self.connection.execute(query)
 
-    def create_db_table_simple(self, replace_existing: bool = False, in_table_definition = None) -> None:
+    def create_db_table_simple(self, replace_existing: bool = False, in_table_definition=None) -> None:
         """
         Creates a db table based on column definitions.
 
@@ -168,13 +168,15 @@ class DuckConnection:
         Returns:
             None
         """
-        kbc_input_table_relation = self.create_temp_table(in_table_definition)
+        # table name is referenced in the query
+        kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
 
         if replace_existing:
             query = f"CREATE OR REPLACE TABLE {self.destination} AS (SELECT * FROM kbc_input_table_relation LIMIT 0) "
         else:
-            query = f"CREATE TABLE IF NOT EXISTS {self.destination} AS (SELECT * FROM kbc_input_table_relation LIMIT 0)   "
-
+            query = (
+                f"CREATE TABLE IF NOT EXISTS {self.destination} AS (SELECT * FROM kbc_input_table_relation LIMIT 0)   "
+            )
 
         if self.params.debug:
             logging.debug(f"Executing query: {query}")
