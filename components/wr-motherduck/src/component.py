@@ -25,9 +25,9 @@ class Component(ComponentBase):
 
         if self.params.load_everything:
             for in_table_definition in self.get_input_tables_definitions():
-                self.db.upload_table(
+                self.db.upload_table_simple(
                     in_table_definition=in_table_definition,
-                    destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
+                    destination=f"{self.params.db}.{self.params.db_schema}.{in_table_definition.name.replace('.csv', '')}",
                 )
         else:
             in_table_definition = self._get_in_table()

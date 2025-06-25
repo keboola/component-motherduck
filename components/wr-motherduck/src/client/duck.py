@@ -60,6 +60,32 @@ class DuckConnection:
         finally:
             self.connection.close()
 
+    def upload_table_simple(self, in_table_definition, destination: str):
+        self.destination = destination
+
+        # table name is referenced in the query
+        kbc_input_table_relation = self.create_temp_table(in_table_definition)  # noqa: F841
+
+        try:
+            strategy = "INSERT"
+            if self.params.destination.incremental:
+                self.create_db_table_simple(in_table_definition=in_table_definition)
+
+                if [col.destination_name for col in self.params.destination.columns if col.pk]:
+                    # if primary key is defined, use UPSERT
+                    strategy = "INSERT OR REPLACE"
+            else:
+                self.create_db_table_simple(replace_existing=True, in_table_definition=in_table_definition)
+
+            self.connection.execute(f"""
+            {strategy} INTO {self.destination}
+            SELECT * FROM kbc_input_table_relation
+            """)
+        except ConstraintException as e:
+            raise UserException(f"Error during data load: {e}") from e
+        finally:
+            self.connection.close()
+
     def _check_pks_consistency(self):
         """
         Check if the primary key columns defined in the configuration
@@ -126,6 +152,29 @@ class DuckConnection:
 
         # Finish the query
         query += ");"
+
+        if self.params.debug:
+            logging.debug(f"Executing query: {query}")
+
+        self.connection.execute(query)
+
+    def create_db_table_simple(self, replace_existing: bool = False, in_table_definition = None) -> None:
+        """
+        Creates a db table based on column definitions.
+
+        Args:
+            replace_existing: If True, replace the existing table.
+
+        Returns:
+            None
+        """
+        kbc_input_table_relation = self.create_temp_table(in_table_definition)
+
+        if replace_existing:
+            query = f"CREATE OR REPLACE TABLE {self.destination} AS (SELECT * FROM kbc_input_table_relation LIMIT 0) "
+        else:
+            query = f"CREATE TABLE IF NOT EXISTS {self.destination} AS (SELECT * FROM kbc_input_table_relation LIMIT 0)   "
+
 
         if self.params.debug:
             logging.debug(f"Executing query: {query}")
