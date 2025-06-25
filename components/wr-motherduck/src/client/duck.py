@@ -57,8 +57,6 @@ class DuckConnection:
             """)
         except ConstraintException as e:
             raise UserException(f"Error during data load: {e}") from e
-        finally:
-            self.connection.close()
 
     def upload_table_simple(self, in_table_definition, destination: str):
         self.destination = destination
@@ -83,8 +81,6 @@ class DuckConnection:
             """)
         except ConstraintException as e:
             raise UserException(f"Error during data load: {e}") from e
-        finally:
-            self.connection.close()
 
     def _check_pks_consistency(self):
         """

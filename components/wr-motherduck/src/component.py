@@ -23,21 +23,27 @@ class Component(ComponentBase):
 
         start_time = time.time()
 
-        if self.params.load_everything:
-            for in_table_definition in self.get_input_tables_definitions():
-                self.db.upload_table_simple(
+        try:
+            if self.params.load_everything:
+                for in_table_definition in self.get_input_tables_definitions():
+                    self.db.upload_table_simple(
+                        in_table_definition=in_table_definition,
+                        destination=f"{self.params.db}.{self.params.db_schema}."
+                                    f"{in_table_definition.name.replace('.csv', '')}",
+                    )
+            else:
+                in_table_definition = self._get_in_table()
+                self.db.upload_table(
                     in_table_definition=in_table_definition,
-                    destination=f"{self.params.db}.{self.params.db_schema}."
-                                f"{in_table_definition.name.replace('.csv', '')}",
+                    destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
                 )
-        else:
-            in_table_definition = self._get_in_table()
-            self.db.upload_table(
-                in_table_definition=in_table_definition,
-                destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
-            )
 
-        logging.debug(f"Execution time: {time.time() - start_time:.2f} seconds")
+            logging.debug(f"Execution time: {time.time() - start_time:.2f} seconds")
+
+        except Exception as e:
+            raise UserException(f"Error during data load: {e}") from e
+        finally:
+            self.db.connection.close()
 
     def _get_in_table(self):
         in_tables = self.get_input_tables_definitions()
