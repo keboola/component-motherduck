@@ -23,11 +23,18 @@ class Component(ComponentBase):
 
         start_time = time.time()
 
-        in_table_definition = self._get_in_table()
-        self.db.upload_table(
-            in_table_definition=in_table_definition,
-            destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
-        )
+        if self.params.load_everything:
+            for in_table_definition in self.get_input_tables_definitions():
+                self.db.upload_table(
+                    in_table_definition=in_table_definition,
+                    destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
+                )
+        else:
+            in_table_definition = self._get_in_table()
+            self.db.upload_table(
+                in_table_definition=in_table_definition,
+                destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
+            )
 
         logging.debug(f"Execution time: {time.time() - start_time:.2f} seconds")
 
