@@ -18,6 +18,8 @@
           "title": "Table",
           "format": "select",
           "options": {
+            "tags": true,
+            "creatable": true,
             "async": {
               "label": "Load tables",
               "action": "list_tables",
@@ -157,7 +159,9 @@
           "options": {
             "async": {
               "label": "Load columns",
-              "action": "return_columns_data"
+              "action": "return_columns_data",
+              "autoload": [],
+              "cache": false
             }
           }
         }
