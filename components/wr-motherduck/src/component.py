@@ -26,7 +26,7 @@ class Component(ComponentBase):
         in_table_definition = self._get_in_table()
         self.db.upload_table(
             in_table_definition=in_table_definition,
-            destination=f"{self.params.db}.{self.params.db_schema}.{self.params.destination.table}",
+            destination=f'"{self.params.db}"."{self.params.db_schema}"."{self.params.destination.table}"',
         )
 
         logging.debug(f"Execution time: {time.time() - start_time:.2f} seconds")
@@ -112,6 +112,8 @@ class Component(ComponentBase):
 
     @sync_action("list_schemas")
     def list_schemas(self):
+        if not self.params.db:
+            raise UserException("Database must be selected to list schemas.")
         schemas = self.db.connection.execute(f"""
         SELECT schema_name
         FROM information_schema.schemata
@@ -122,6 +124,8 @@ class Component(ComponentBase):
 
     @sync_action("list_tables")
     def list_tables(self):
+        if not (self.params.db and self.params.db_schema):
+            raise UserException("Database and schema must be selected to list tables.")
         tables = self.db.connection.execute(f"""
         SELECT table_name
         FROM information_schema.tables

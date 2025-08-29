@@ -51,10 +51,13 @@ class DuckConnection:
 
             columns = ", ".join([f"{col.source_name}" for col in self.params.destination.columns])
 
-            self.connection.execute(f"""
+            query = f"""
             {strategy} INTO {self.destination}
             SELECT {columns} FROM kbc_input_table_relation
-            """)
+            """
+
+            logging.debug(f"Executing query: {query}")
+            self.connection.execute(query)
         except ConstraintException as e:
             raise UserException(f"Error during data load: {e}") from e
         finally:
