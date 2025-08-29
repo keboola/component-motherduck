@@ -56,9 +56,7 @@ class DuckConnection:
             SELECT {columns} FROM kbc_input_table_relation
             """
 
-            if self.params.debug:
-                logging.debug(f"Executing query: {query}")
-
+            logging.debug(f"Executing query: {query}")
             self.connection.execute(query)
         except ConstraintException as e:
             raise UserException(f"Error during data load: {e}") from e
