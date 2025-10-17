@@ -118,7 +118,7 @@
               },
               "default_value": {
                 "type": "string",
-                "title": "Defaul Value",
+                "title": "Default Value",
                 "propertyOrder": 6
               }
             }
