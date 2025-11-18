@@ -23,6 +23,7 @@ class DuckConnection:
             "threads": params.threads,
             "max_memory": f"{params.max_memory}MB",
             "motherduck_token": params.token,
+            "custom_user_agent": "keboola.wr-motherduck",
         }
 
         try:

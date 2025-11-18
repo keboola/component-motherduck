@@ -75,6 +75,7 @@ class Component(ComponentBase):
             "threads": self.params.threads,
             "max_memory": f"{self.params.max_memory}MB",
             "motherduck_token": self.params.token,
+            "custom_user_agent": "keboola.ex-motherduck",
         }
 
         conn = duckdb.connect(database="md:", config=config)
