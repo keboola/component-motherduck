@@ -2,7 +2,6 @@ import logging
 import os
 
 import duckdb
-from duckdb.duckdb import ConstraintException, DuckDBPyRelation
 from keboola.component.dao import (
     TableDefinition,
 )
@@ -59,7 +58,7 @@ class DuckConnection:
 
             logging.debug(f"Executing query: {query}")
             self.connection.execute(query)
-        except ConstraintException as e:
+        except duckdb.ConstraintException as e:
             raise UserException(f"Error during data load: {e}") from e
         finally:
             self.connection.close()
@@ -136,7 +135,7 @@ class DuckConnection:
 
         self.connection.execute(query)
 
-    def create_temp_table(self, table_def: TableDefinition) -> DuckDBPyRelation:
+    def create_temp_table(self, table_def: TableDefinition) -> duckdb.DuckDBPyRelation:
         table = self.connection.read_csv(
             path_or_buffer=table_def.full_path,
             delimiter=table_def.delimiter,
