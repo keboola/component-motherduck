@@ -140,3 +140,4 @@ jobs:
           kbc_developerportal_username: ${{ vars.KBC_DEVELOPERPORTAL_USERNAME }}
           kbc_developerportal_password: ${{ secrets.KBC_DEVELOPERPORTAL_PASSWORD }}
           script_path: ${{ env.COMPONENT_DIR }}/scripts/developer_portal/update_properties.sh
+
