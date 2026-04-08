@@ -1,7 +1,7 @@
 name: wr-motherduck
 on:
   push:
-    branches: ['*']
+    branches: ['**']
     tags: ['*']
     paths:
       - 'components/wr-motherduck/**'

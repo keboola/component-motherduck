@@ -1,7 +1,7 @@
 name: ex-motherduck
 on:
   push:
-    branches: ['*']
+    branches: ['**']
     tags: ['*']
     paths:
       - 'components/ex-motherduck/**'
