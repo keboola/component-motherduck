@@ -3,7 +3,7 @@ import time
 
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.exceptions import UserException
-from keboola.component.sync_actions import SelectElement
+from keboola.component.sync_actions import SelectElement, ValidationResult, MessageType
 
 from client.duck import DuckConnection
 from client.storage_api import SAPIClient
@@ -103,7 +103,7 @@ class Component(ComponentBase):
 
     @sync_action("testConnection")
     def test_connection(self):
-        pass  # just init connection
+        return ValidationResult("Connection successful.", MessageType.SUCCESS)
 
     @sync_action("list_databases")
     def list_databases(self):
