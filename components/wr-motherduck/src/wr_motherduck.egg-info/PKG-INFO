@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: wr-motherduck
+Version: 0.0.0
+Requires-Python: >=3.13
+License-File: LICENSE.md
+Requires-Dist: flake8>=7.2.0
+Requires-Dist: freezegun>=1.5.1
+Requires-Dist: keboola-component>=1.11.0
+Requires-Dist: keboola-http-client>=1.0.1
+Requires-Dist: keboola-utils>=1.1.0
+Requires-Dist: mock>=5.2.0
+Requires-Dist: pydantic>=2.11.3
+Requires-Dist: ruff>=0.11.5
+Requires-Dist: duckdb>=1.4.3
+Requires-Dist: kbcstorage>=0.9.2
+Dynamic: license-file

@@ -1,0 +1,13 @@
+LICENSE.md
+README.md
+pyproject.toml
+src/component.py
+src/configuration.py
+src/client/duck.py
+src/client/storage_api.py
+src/wr_motherduck.egg-info/PKG-INFO
+src/wr_motherduck.egg-info/SOURCES.txt
+src/wr_motherduck.egg-info/dependency_links.txt
+src/wr_motherduck.egg-info/requires.txt
+src/wr_motherduck.egg-info/top_level.txt
+tests/test_component.py
