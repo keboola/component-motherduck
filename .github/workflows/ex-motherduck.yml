@@ -28,7 +28,7 @@ jobs:
 
       - name: Get push event info
         id: info
-        uses: keboola/component-ci/actions/push-event-info@feature/source-image-input
+        uses: keboola/component-ci/actions/push-event-info@master
 
   build:
     name: Docker Image Build
@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        uses: keboola/component-ci/actions/docker-build@feature/source-image-input
+        uses: keboola/component-ci/actions/docker-build@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
           dockerfile: ${{ env.COMPONENT_DIR }}/Dockerfile
@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Load Docker image
-        uses: keboola/component-ci/actions/docker-load@feature/source-image-input
+        uses: keboola/component-ci/actions/docker-load@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
 
@@ -72,7 +72,7 @@ jobs:
       - build
     steps:
       - name: Run KBC tests
-        uses: keboola/component-ci/actions/kbc-tests@feature/source-image-input
+        uses: keboola/component-ci/actions/kbc-tests@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
           image_tag: ${{ needs.push_event_info.outputs.app_image_tag }}
@@ -88,12 +88,12 @@ jobs:
       - tests_kbc
     steps:
       - name: Load Docker image
-        uses: keboola/component-ci/actions/docker-load@feature/source-image-input
+        uses: keboola/component-ci/actions/docker-load@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
 
       - name: Push to ECR
-        uses: keboola/component-ci/actions/push-to-ecr@feature/source-image-input
+        uses: keboola/component-ci/actions/push-to-ecr@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
           vendor: ${{ env.KBC_DEVELOPERPORTAL_VENDOR }}
@@ -113,7 +113,7 @@ jobs:
     if: needs.push_event_info.outputs.is_deploy_ready == 'true'
     steps:
       - name: Deploy
-        uses: keboola/component-ci/actions/deploy@feature/source-image-input
+        uses: keboola/component-ci/actions/deploy@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
           vendor: ${{ env.KBC_DEVELOPERPORTAL_VENDOR }}
@@ -133,7 +133,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Update properties
-        uses: keboola/component-ci/actions/update-properties@feature/source-image-input
+        uses: keboola/component-ci/actions/update-properties@master
         with:
           app_id: ${{ env.KBC_DEVELOPERPORTAL_APP }}
           vendor: ${{ env.KBC_DEVELOPERPORTAL_VENDOR }}
